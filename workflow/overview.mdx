@@ -1,0 +1,119 @@
+---
+title: "SoftwareCopyright-Skill workflow: 11-stage overview"
+description: "The full pipeline: 11 stages from environment check to validated Word/TXT output, 7 mandatory human gates, and the complete output directory structure."
+---
+
+The SoftwareCopyright-Skill workflow is a sequential 11-stage pipeline. Codex drives every stage — running scripts, reading source code, and drafting content — but it never proceeds past a confirmation gate without explicit input from you. Gates exist at the moments where only you can make a decision: which DOCX mode to use, whether the business understanding is accurate, which source files should represent your software, and whether the finished Markdown is ready to become official Word documents.
+
+## All 11 stages
+
+<Steps>
+  <Step title="Environment check">
+    Runs `check_environment.py` to probe for Python 3, the bundled `vendor/docx-toolkit`, and the .NET SDK. Reports which output modes are available and stops for your choice if the full OpenXML environment is missing.
+  </Step>
+  <Step title="Project location">
+    Scans the current directory for candidate project roots, skipping `node_modules`, build artifacts, hidden directories, and the skill's own output folder. If multiple candidates exist, Codex stops and asks you to choose.
+  </Step>
+  <Step title="Project analysis">
+    Runs `analyze_project.py` to collect structural facts: framework, language, entry files, routes, page/component/API/state/utility file categories, source line count, `package.json` name and version, and run command candidates.
+  </Step>
+  <Step title="Business understanding">
+    Runs `generate_business_context.py` in two passes. First pass collects evidence from your project's documents and code. Second pass lets Codex form a judgment on industry, target users, core value, feature list, operation flow, and manual structure — then writes `草稿/业务理解.md` for your review.
+  </Step>
+  <Step title="Application form fields">
+    Guides you through confirming the fields required for the official registration form: software name, version, rights holder, dates, development and runtime hardware/OS, IDE, supporting software, and software category.
+  </Step>
+  <Step title="Code file selection">
+    Runs `propose_code_selection.py` to build a candidate inventory, then Codex reads the project and fills `草稿/代码文件选择.json` with selected files, line ranges, and reasons. After your confirmation, `extract_code_material.py` extracts the actual code into paginated Markdown drafts.
+  </Step>
+  <Step title="Markdown draft generation">
+    Runs `generate_manual_draft.py` to produce `草稿/操作手册.md` through a minimum three-round self-review loop. Also runs `generate_application_info.py` to produce `草稿/申请表信息.md`.
+  </Step>
+  <Step title="Screenshots">
+    Stops and presents three screenshot method options: Chrome DevTools MCP, Codex Computer Use, or user-supplied files. If you skip, visible placeholder text is kept in all Markdown and Word outputs.
+  </Step>
+  <Step title="Markdown confirmation">
+    You review all files under `软件著作权申请资料/草稿/`. Codex checks name/version consistency, code traceability, and manual completeness before accepting your confirmation.
+  </Step>
+  <Step title="Word/TXT generation">
+    Runs `build_docx_from_md.py` to convert confirmed Markdown drafts into `正式资料/申请表信息.txt`, code `.docx` files, and `<软件全称>_操作手册.docx`. The script re-reads the confirmed `申请表信息.md` and uses its fields as the authoritative source for file names and headers.
+  </Step>
+  <Step title="Three-round validation">
+    Runs at least three verification passes: file completeness, code traceability back to source files, business traceability back to `业务理解.md`, and consistency of names, version numbers, and page counts across all outputs.
+  </Step>
+</Steps>
+
+## Stage navigation
+
+<CardGroup cols={2}>
+  <Card title="Environment check" href="/workflow/environment-check">
+    How the skill probes for Python, the bundled toolkit, and .NET SDK — and what happens when the full DOCX environment is missing.
+  </Card>
+  <Card title="Project analysis" href="/workflow/project-analysis">
+    What `analyze_project.py` reads from your codebase and which JSON fields it produces for downstream stages.
+  </Card>
+  <Card title="Business understanding" href="/workflow/business-understanding">
+    The two-pass evidence-and-model process that forms the business context all drafts are built from.
+  </Card>
+  <Card title="Code selection" href="/workflow/code-selection">
+    How to choose source files and line ranges, the 60-page rule, and the extract command.
+  </Card>
+  <Card title="Operation manual draft" href="/workflow/manual-generation">
+    The three-round self-review loop, screenshot handling, and the application form info draft.
+  </Card>
+  <Card title="Word/TXT output" href="/workflow/docx-output">
+    Final generation, output file list, three-round validation, and how to use the files for online filing.
+  </Card>
+</CardGroup>
+
+<Note>
+**The 7 mandatory human gates** — Codex will hard-stop and wait for your explicit input at each of these points before continuing:
+
+1. **`environment`** — choose full DOCX environment or basic fallback when .NET SDK is absent
+2. **`project`** — choose the correct project root when multiple candidates are found
+3. **`business`** — confirm industry, target users, core functions, and application wording in `草稿/业务理解.md`
+4. **`application-fields`** — confirm and complete all fields in `草稿/申请表信息.md`
+5. **`code-selection`** — confirm or edit the file/line-range selection in `草稿/代码文件选择.json`
+6. **`screenshot-method`** — choose Chrome DevTools MCP, Codex Computer Use, user-supplied files, or skip
+7. **`markdown`** — confirm all Markdown drafts are ready before Word/TXT generation begins
+</Note>
+
+## Output directory structure
+
+After a complete run, the output directory contains the following layout:
+
+```text
+软件著作权申请资料/
+├── 环境检查.md
+├── 环境检查.json
+├── 环境确认.json
+├── 截图方式确认.json
+├── analysis/
+│   └── project.json
+├── 草稿/
+│   ├── 业务理解证据.md
+│   ├── 业务理解证据.json
+│   ├── 业务理解模型稿模板.json
+│   ├── 业务理解.md
+│   ├── 业务理解.json
+│   ├── 申请表信息.md
+│   ├── 申请表字段确认.json
+│   ├── 代码文件候选清单.md
+│   ├── 代码文件选择.json
+│   ├── 代码提取清单.md
+│   ├── 代码提取清单.json
+│   ├── 代码-前30页.md          ← present when total pages >= 60
+│   ├── 代码-后30页.md          ← present when total pages >= 60
+│   ├── 代码-全部.md            ← present when total pages < 60
+│   ├── 操作手册.md
+│   ├── 操作手册自检记录.md
+│   ├── 操作手册自检记录.json
+│   └── 最终生成确认.json
+└── 正式资料/
+    ├── 申请表信息.txt
+    ├── <软件名称>_操作手册.docx
+    ├── <软件名称>-代码(前30页).docx   ← present when total pages >= 60
+    ├── <软件名称>-代码(后30页).docx   ← present when total pages >= 60
+    ├── <软件名称>-代码(全部).docx     ← present when total pages < 60
+    └── 生成报告.md
+```

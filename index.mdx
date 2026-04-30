@@ -1,133 +1,48 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
-icon: 'star'
+title: "SoftwareCopyright-Skill: Free 软著 Material Generator"
+description: "Free Codex Skill that generates Chinese software copyright materials — operation manual, code excerpts, and form info — from your real project source."
 ---
 
-## Setting up
+SoftwareCopyright-Skill is a Codex Skill that automates the most tedious part of Chinese software copyright (软件著作权) registration: preparing the application materials. Install it once, point it at your project, and it guides you through every confirmation step before producing a ready-to-submit package of Word documents and TXT files — all generated locally from your real source code.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Get started in minutes" icon="rocket" href="/installation">
+    Install the skill into your Codex environment and run your first generation in three steps.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Quickstart walkthrough" icon="play" href="/quickstart">
+    See the full workflow from project analysis to final Word output in a single guided example.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Workflow reference" icon="list-check" href="/workflow/overview">
+    Understand each of the 11 workflow stages, from environment check to three-round validation.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Script reference" icon="terminal" href="/reference/scripts">
+    Full command-line reference for every Python script bundled with the skill.
   </Card>
-</Columns>
+  <Card title="Application fields" icon="file-lines" href="/reference/application-fields">
+    Every field on the 软著 application form, with sourcing rules and consistency requirements.
+  </Card>
+  <Card title="Submission guide" icon="paper-plane" href="/submission/filing-process">
+    Step-by-step instructions for filing through China Copyright Protection Center.
+  </Card>
+</CardGroup>
 
-## Create beautiful pages
+## How it works
 
-Everything you need to create world-class documentation.
+<Steps>
+  <Step title="Install the skill">
+    Copy `software-copyright-materials/` into your Codex skills directory and restart Codex.
+  </Step>
+  <Step title="Open your project in Codex">
+    Navigate to the project you want to register, then ask Codex to generate 软著申请资料.
+  </Step>
+  <Step title="Confirm at each stage">
+    The skill pauses at seven mandatory gates — business understanding, field values, code selection, and more — so you stay in control of every decision.
+  </Step>
+  <Step title="Receive your output package">
+    After your final confirmation, the skill writes `软件著作权申请资料/正式资料/` containing a `.docx` operation manual, front/back 30-page code documents, and a `申请表信息.txt` ready for copy-paste into the official filing system.
+  </Step>
+</Steps>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
-
-## Make your content agent ready
-
-Make your docs work for humans and AI agents alike.
-
-<Columns cols={2}>
-  <Card
-    title="Prompt component"
-    icon="robot"
-    href="/agent-ready/prompt"
-  >
-    Embed shareable AI prompts readers can copy or open in Cursor.
-  </Card>
-  <Card
-    title="Visibility"
-    icon="eye"
-    href="/agent-ready/visibility"
-  >
-    Show different content to humans and agents reading your docs.
-  </Card>
-  <Card
-    title="Contextual menu"
-    icon="bolt"
-    href="/agent-ready/contextual"
-  >
-    Give readers one-click access to Claude, ChatGPT, Cursor, and more.
-  </Card>
-  <Card
-    title="AI coding tools"
-    icon="wand-magic-sparkles"
-    href="/ai-tools/claude-code"
-  >
-    Set up Claude Code, Cursor, or Windsurf with Mintlify's skill.
-  </Card>
-</Columns>
-
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Note>
+  This project is completely free and MIT-licensed. Do not pay for any service that claims to wrap or resell it.
+</Note>

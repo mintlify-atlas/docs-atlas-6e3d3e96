@@ -1,0 +1,93 @@
+---
+title: "Business understanding: confirm industry and purpose"
+description: "Two-pass process: generate_business_context.py collects evidence, Codex forms an industry and purpose judgment, and you confirm before any draft proceeds."
+---
+
+Before writing a single line of the application form or operation manual, the skill forms a business understanding of your project. This is not a keyword-lookup step — Codex reads your project's documents, README, page text, routes, source code, and the evidence file produced by the first script pass, then makes its own judgment about what industry the software serves, who its target users are, what its core value is, and how the operation manual should be structured. You confirm or revise that judgment at a mandatory gate before any draft proceeds.
+
+## Stage 1 — Evidence collection
+
+The first call to `generate_business_context.py` collects raw evidence from the project without making any decisions:
+
+```bash
+python3 scripts/generate_business_context.py \
+  --project <项目目录> \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --software-name "<软件全称>" \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+This produces three files:
+
+- `草稿/业务理解证据.md` — human-readable evidence listing: framework, routes, feature name hints, entry/page/component/API file lists, and excerpts from any `.md`, `.txt`, `.rst`, or `.adoc` documents found in the project
+- `草稿/业务理解证据.json` — machine-readable version of the same evidence
+- `草稿/业务理解模型稿模板.json` — an empty template with all required fields for Codex to fill in
+
+## Stage 2 — Model analysis
+
+After evidence collection, Codex reads `业务理解证据.md`, `业务理解证据.json`, and additional project files directly (README, PRD/BRD documents, page text, route configurations, API files, and relevant source code). From this reading, Codex independently determines:
+
+- Which documents and source files are most relevant to the application
+- What industry or domain the software belongs to
+- Who the target users are
+- What the software's core value is
+- Which features belong in the copyright application materials
+- How a typical operation flow should be organized
+- What chapter structure suits the operation manual for this specific project
+- How the application form fields should be worded
+
+Codex does not use keyword tables or template rules to reach these conclusions. It reads your actual project materials and explains its reasoning in `model_reason` fields. If external research would help clarify an unfamiliar industry, Codex may look up comparable products — but only to understand industry terminology, never to invent features your project does not have.
+
+## Stage 3 — Finalize business understanding
+
+After forming its judgment, Codex calls `generate_business_context.py` a second time, passing its completed model context JSON:
+
+```bash
+python3 scripts/generate_business_context.py \
+  --project <项目目录> \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --software-name "<软件全称>" \
+  --out-dir 软件著作权申请资料/草稿 \
+  --model-context <模型生成的业务理解JSON>
+```
+
+This produces the confirmed-format output:
+
+- `草稿/业务理解.md` — human-readable business understanding for your review
+- `草稿/业务理解.json` — machine-readable version used by all downstream scripts
+
+The script validates that every required field is non-empty before writing these files. If any required field is missing or empty, it exits with a clear error message listing the offending fields.
+
+## Required fields in the business understanding
+
+The model context JSON that Codex passes to the second call must contain all 11 of the following fields:
+
+| Field | What it contains |
+| --- | --- |
+| `product_positioning` | A concise positioning statement for the software |
+| `industry` | The industry or domain the software serves |
+| `target_users` | A list of target user types |
+| `core_value` | The primary value the software delivers |
+| `business_features` | A list of feature names for the application |
+| `business_feature_details` | A map from each feature name to a plain-language description |
+| `operation_flow` | An ordered list of steps in the typical operation flow |
+| `application_purpose` | The development purpose field for the registration form |
+| `main_functions` | The main functions field for the registration form |
+| `technical_characteristics` | The technical characteristics field for the registration form |
+| `manual_sections` | Proposed chapter structure for the operation manual |
+
+## Confirmation gate
+
+After `草稿/业务理解.md` is written, the skill stops completely. You must read the file and confirm that the industry classification, target users, core functions, and application wording accurately reflect your software before anything else proceeds.
+
+To record your confirmation:
+
+```bash
+python3 scripts/confirm_stage.py --workdir 软件著作权申请资料 --stage business --note "<用户确认内容>"
+```
+
+Replace `<用户确认内容>` with a brief note, such as `"行业、用户和功能口径已确认"` or a description of any corrections you asked Codex to make.
+
+<Warning>
+No application form draft (`草稿/申请表信息.md`) and no operation manual draft (`草稿/操作手册.md`) will be written until the `business` gate is recorded. If the business understanding does not accurately reflect your software, ask Codex to revise it before confirming. Once confirmed, `草稿/业务理解.json` has `user_confirmed: true` and downstream scripts are unblocked.
+</Warning>

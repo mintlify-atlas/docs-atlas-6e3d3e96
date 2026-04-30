@@ -1,0 +1,46 @@
+---
+title: "Application form fields reference (申请表信息)"
+description: "All 20 fields in the 申请表信息 draft: sources, derivation rules, and consistency requirements enforced by build_docx_from_md.py at Word generation time."
+---
+
+The skill generates a `草稿/申请表信息.md` file at the end of stage 7 (`generate_application_info.py`). This page documents every field in the official 20-field sequence, explains where each value comes from, and describes the consistency rules that apply when the skill later converts those drafts into final Word and TXT documents.
+
+## Field reference
+
+Each field is output in the Markdown draft with the prefix `➤`. The `build_docx_from_md.py` script reads that prefix when writing `申请表信息.txt`, so the prefix must not be removed from the draft.
+
+| # | Field | Source | Notes |
+|---|-------|--------|-------|
+| 1 | **软件全称** | User-confirmed | Drives all filenames, page headers in code Word documents, and the operation manual title. Must be confirmed explicitly — the script uses a `待用户确认（建议：…）` hint until confirmed. |
+| 2 | **版本号** | User-confirmed | If the project's `package.json` version is less than `V1.0`, the skill prompts you to choose between `V1.0` (the conventional first-submission label) and the project's actual version. |
+| 3 | **著作权人** | User-confirmed | No default value is inferred. |
+| 4 | **开发完成日期** | User-confirmed | No default value is inferred. |
+| 5 | **首次发表日期** | User-confirmed | Enter the actual publication date, or `未发表` if the software has not been publicly released. |
+| 6 | **开发的硬件环境** | Read from current machine | `generate_application_info.py` reads CPU count, architecture, total memory, and disk capacity from the host OS. The output is a suggestion; you can override it for the actual development or deployment device. If the system cannot read hardware info, the field defaults to `待用户确认`. |
+| 7 | **运行的硬件环境** | Defaults to dev hardware | Reuses the same hardware suggestion as field 6. Override if the runtime hardware (e.g. a production server) differs from the development machine. |
+| 8 | **开发该软件的操作系统** | Read from current machine | Detected via `platform.system()` — e.g. `macOS 15.1`, `Windows 11`. Always confirm against the actual development machine. |
+| 9 | **软件开发环境 / 开发工具** | Inferred from project structure | Only the IDE or editor name is written here — e.g. `Visual Studio Code`, `WebStorm`, `IntelliJ IDEA`, `Cursor`. Framework names such as React, Next.js, or Vite must **not** appear in this field. The skill detects `.idea/` or `.vscode/` directories to suggest the IDE. |
+| 10 | **该软件的运行平台 / 操作系统** | Inferred from frameworks | e.g. `Windows 10/11 或 macOS 13及以上版本`. For Electron or Tauri projects the skill explicitly labels this as a desktop platform. |
+| 11 | **软件运行支撑环境 / 支持软件** | Inferred from project files | Populated from `package.json` engines, lock-file presence (to detect npm/pnpm/Yarn/Bun), `pyproject.toml`, `requirements.txt`, and `docker-compose.yml` service definitions. Includes items such as `Node.js`, `Python`, `Docker`, `PostgreSQL`, `Redis`, and modern browsers. |
+| 12 | **编程语言** | Derived from project analysis | `analyze_project.py` counts file extensions and detected frameworks. Output examples: `TypeScript`, `Vue、TypeScript`, `JavaScript`. |
+| 13 | **源程序量** | Derived from project analysis | Total source-code line count from `analyze_project.py`, or the selected line count from the code extraction manifest if available. |
+| 14 | **开发目的** | Derived from business understanding | Must come from the confirmed `草稿/业务理解.json`. The `application_purpose` field in that file is used verbatim. |
+| 15 | **面向领域 / 行业** | Derived from business understanding | Taken from the `industry` field in the confirmed business context. Must be specific to this project — generic labels like "互联网" are not acceptable without supporting evidence. |
+| 16 | **软件的主要功能** | Derived from business understanding | Taken from the `main_functions` field. Must describe the actual features of this project, not reused text from a template or a different project. |
+| 17 | **技术特点** | Derived from business understanding | Taken from the `technical_characteristics` field. Written in terms of the software's structural and architectural approach, not marketing language. |
+| 18 | **软件的技术特点选项** | User selects | Common values: `应用软件`, `系统软件`, `支撑软件`. Pre-filled from `software_technical_option` in the business context; user must confirm. |
+| 19 | **页数** | Calculated from code extraction | The `total_pages` value from `代码提取清单.json`, written by `extract_code_material.py`. Automatically populated — do not edit manually unless the extraction was rerun. |
+| 20 | **软件分类** | User selects | Pre-filled from `software_category` in the business context (defaults to `应用软件`); user must confirm. |
+
+## Consistency rules
+
+`软件全称` and `版本号` are the two fields that propagate across every output document. The rules below are enforced by `build_docx_from_md.py` at generation time.
+
+- The **page header** of each code Word file (`代码-前30页.docx`, `代码-后30页.docx`, or `代码-全部.docx`) is set to `{软件全称} {版本号}   第 N 页`. The values are read from `草稿/申请表信息.md`, not from the `--software-name` and `--version` CLI arguments.
+- The **operation manual** title and all occurrences of the software name in the manual body are synchronized to `软件全称` from the draft. If `--software-name` differs from the confirmed draft value, the script rewrites the manual text to use the draft value and logs a warning in `正式资料/生成报告.md`.
+- The **TXT export** (`申请表信息.txt`) is produced by extracting every `➤`-prefixed line from the Markdown draft. Its content is therefore always consistent with the draft — there is no separate editing step.
+- If the `--software-name` CLI argument passed to `build_docx_from_md.py` differs from the confirmed `草稿/申请表信息.md` value, the confirmed file value wins and a warning is written to the generation report.
+
+<Warning>
+Any field that still contains the string `待用户确认` in `草稿/申请表信息.md` at generation time means that field was never confirmed. The `confirm_stage.py --stage application-fields` gate will refuse to proceed if any such placeholder remains. If you see `待用户确认` in `正式资料/申请表信息.txt`, check `正式资料/生成报告.md` for the list of unconfirmed fields and re-run the application-fields confirmation after filling them in.
+</Warning>

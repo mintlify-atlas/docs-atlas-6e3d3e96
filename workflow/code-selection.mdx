@@ -1,0 +1,95 @@
+---
+title: "Code selection: choose what goes in your 软著 materials"
+description: "How propose_code_selection.py builds the candidate inventory, the selection JSON fields, the 60-page split rule, and the extract command."
+---
+
+Chinese copyright regulations require that code materials in a software copyright application come from the actual software being registered. The code selection stage gives you and Codex explicit, auditable control over exactly which source files and line ranges are extracted. Nothing is included without a model-authored reason and your explicit confirmation.
+
+## Generate the candidate list
+
+Run `propose_code_selection.py` to scan the project and produce an inventory of every eligible source file:
+
+```bash
+python3 scripts/propose_code_selection.py \
+  --project <项目目录> \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+This produces two files:
+
+- `草稿/代码文件候选清单.md` — a human-readable table listing every candidate file, its line count, and its evidence category
+- `草稿/代码文件选择.json` — the editable selection file that Codex fills in and you confirm
+
+The script lists all candidates but does not select any by default. Codex must read the candidate list alongside the business understanding and project source code, then decide which files best represent the software's real functionality and operation logic.
+
+## How selections work
+
+Each entry in `代码文件选择.json` under the `files` array has the following fields:
+
+| Field | Purpose |
+| --- | --- |
+| `path` | Relative path to the source file from the project root |
+| `selected` | `true` to include the file, `false` to exclude it |
+| `start_line` | First line to extract (default: `1`) |
+| `end_line` | Last line to extract (default: full file); set to a specific number to extract only a section |
+| `line_count` | Total lines in the file (read-only, set by the script) |
+| `model_reason` | Required: Codex's explanation for why this file or section was chosen |
+| `priority` | Numeric sort order reflecting file category (read-only) |
+| `selection_tier` | `"frontend"` or `"supplement"` (read-only) |
+| `evidence` | Human-readable evidence category label (read-only) |
+
+Codex fills in `selected`, `start_line`, `end_line`, and `model_reason`. All selections must have a non-empty `model_reason` before the gate can be recorded.
+
+**Priority order** for file selection follows this sequence, from highest to lowest priority:
+
+1. Entry files (`main.ts`, `app.vue`, Next.js root pages)
+2. Route configuration files
+3. Page and view files
+4. API/service files and data request modules
+5. State management files (Pinia, Redux, Zustand)
+6. Component files
+7. Utility, hook, and composable files
+8. Backend services, models, and schemas (supplement tier)
+
+## The 60-page rule
+
+Each page holds 60 lines of code. The extract script applies the following logic after counting the total pages from selected files:
+
+- **Total pages ≥ 60** — the script splits output into `代码-前30页.md` (pages 1–30) and `代码-后30页.md` (last 30 pages). Only these 60 pages appear in the final Word documents.
+- **Total pages < 60 and more unselected candidates exist** — the script hard-stops and instructs you to add more files to `代码文件选择.json` to reach the 60-page target.
+- **Total pages < 60 and all candidates are exhausted** — the script writes `代码-全部.md` with all available pages and proceeds.
+
+This rule ensures that projects large enough to split always submit the standard front-30 / back-30 format, and that smaller projects include as much representative code as possible.
+
+## Extract the code
+
+After you confirm the selection, run:
+
+```bash
+python3 scripts/extract_code_material.py \
+  --project <项目目录> \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --selection 软件著作权申请资料/草稿/代码文件选择.json \
+  --software-name "<软件全称>" \
+  --version "<版本号>" \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+The script reads only the files marked `selected: true` in `代码文件选择.json`. For each selected file it writes a `// File: <path>` marker line, followed by the selected lines, then a blank separator. It then paginates the combined output at 60 lines per page and writes the paginated Markdown files.
+
+It also produces `草稿/代码提取清单.md` and `草稿/代码提取清单.json`, which record every file's source line count, selected range, extracted line count, and position within the material — used for traceability during the three-round validation step.
+
+## Confirmation gate
+
+After reviewing the model's selections in `草稿/代码文件候选清单.md` and `草稿/代码文件选择.json`, record your confirmation:
+
+```bash
+python3 scripts/confirm_stage.py --workdir 软件著作权申请资料 --stage code-selection --note "<用户确认内容>"
+```
+
+The script will refuse to record the gate if no files are selected or if any selected file is missing a `model_reason`.
+
+<Warning>
+AI-generated code is strictly forbidden in Chinese software copyright applications. `extract_code_material.py` reads only real source files from your project directory. It will refuse to process any file that is binary, exceeds 800 KB, or contains lines longer than 3,000 characters in the first 80 lines. If a selected file path falls outside the project root, the script exits immediately with an error.
+</Warning>

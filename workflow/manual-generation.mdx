@@ -1,0 +1,77 @@
+---
+title: "Operation manual draft: tailored to your project"
+description: "How generate_manual_draft.py builds the 操作手册 through a three-round self-review loop, handles four screenshot methods, and produces the 申请表信息 draft."
+---
+
+The operation manual (操作手册) is the document that explains your software to copyright reviewers. It needs to describe what the software does, who operates it, and what users see at each step — in plain language that any reader can follow. The skill generates this manual from your confirmed business understanding, not from a generic chapter template. The chapter structure, module descriptions, and operation flow all come from what Codex learned about your specific project during the business understanding stage.
+
+## Generate the draft
+
+```bash
+python3 scripts/generate_manual_draft.py \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --business-context 软件著作权申请资料/草稿/业务理解.json \
+  --software-name "<软件全称>" \
+  --version "<版本号>" \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+The script will hard-stop if `业务理解.json` is missing or if the `business` gate has not been recorded. The operation manual draft cannot be generated until business understanding is confirmed.
+
+## Three-round self-review
+
+The script runs a minimum of three internal review rounds before writing the final `草稿/操作手册.md`. Each round builds on the previous one:
+
+**Round 1 — Initial draft.** Generates the full manual based on `manual_sections` from the business understanding and the feature list from the project analysis. Checks for: missing chapters, too few screenshot placeholders relative to module count, module sections under 360 characters, technical jargon terms (framework names, API references, state management terminology), and template-marker phrases.
+
+**Round 2 — Expand modules along the real operation flow.** Each module section is enriched with upstream/downstream context — sentences that connect it to the preceding and following modules in the actual user journey. This makes the manual read as a coherent narrative rather than a list of independent descriptions.
+
+**Round 3 — Remove AI flavor and formulaic language.** The script applies a targeted pass to eliminate: empty praise, marketing slogans, uniform sentence structures repeated across modules, over-symmetrical parallel lists, and buzzwords such as 旨在、赋能、一站式、智能化、高效便捷、显著提升、强大能力、丰富功能. Module introductions are also rewritten to vary their sentence openers according to the module's functional category.
+
+If any issues remain after Round 3, the script continues with additional rounds (up to Round 6), targeting the specific problems found in the previous round's checklist. Rounds stop as soon as the checklist is empty or after the maximum is reached and remaining issues are documented.
+
+## Self-review record
+
+The script always writes two audit files alongside the manual:
+
+- `草稿/操作手册自检记录.md` — human-readable round-by-round log, listing every issue found and whether it was resolved
+- `草稿/操作手册自检记录.json` — machine-readable version with `round`, `action`, and `issues` arrays for each pass, plus the final module list
+
+## Screenshots
+
+After the manual draft is written, the skill stops and asks you to choose a screenshot method. Four options are available:
+
+1. **Chrome DevTools MCP** — recommended for web projects already open in a browser; uses `mcp__chrome_devtools__` tools (`list_pages`, `take_screenshot`) to take full-page screenshots of each route
+2. **Codex Computer Use** — for projects that require desktop or browser navigation before capturing; uses `mcp__computer_use__` tools (`get_app_state`, `click`, `press_key`)
+3. **User-supplied files** — place your own PNG/JPG/JPEG/WebP screenshots in `软件著作权申请资料/用户截图/` and run `capture_screenshots.py --manual-dir` to copy and index them
+4. **Skip** — record `screenshot-method: skip` and continue without screenshots; placeholder text is preserved in every module section
+
+To say you want to skip, you can use phrases like "现在不截图", "先跳过截图", "不要截图", or similar; `confirm_stage.py` will normalize these to `skip`. Skipping screenshots does not block Word generation.
+
+When screenshots are skipped or unavailable, each core module in `草稿/操作手册.md` retains a visible line like:
+
+```text
+【截图预留：请在此处插入"项目管理"页面或操作结果截图。】
+```
+
+This placeholder is preserved in the final Word document so that reviewers can see where screenshots would appear.
+
+## Application form info draft
+
+After the manual, run the application form info generator to produce `草稿/申请表信息.md`:
+
+```bash
+python3 scripts/generate_application_info.py \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --code-manifest 软件著作权申请资料/草稿/代码提取清单.json \
+  --business-context 软件著作权申请资料/草稿/业务理解.json \
+  --software-name "<软件全称>" \
+  --version "<版本号>" \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+This draft pre-fills every field the skill can infer from the project analysis and business understanding. Fields that require your input — hardware environment, operating system, rights holder name, and dates — are marked `待用户确认` and must be completed before the `application-fields` gate can be recorded.
+
+<Tip>
+Every module section in the manual must answer three questions about that specific module in your project: what does this module do, how does the user operate it, and what feedback does the user see after completing the operation. Sections that only list feature names or operation steps without describing the module's business purpose and visible result will be flagged in the self-review and expanded in subsequent rounds. The writing style should be readable by a copyright reviewer who has never used the software.
+</Tip>

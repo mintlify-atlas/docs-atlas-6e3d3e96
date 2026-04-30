@@ -1,0 +1,94 @@
+---
+title: "Operation manual writing standards and self-review"
+description: "Required sections, three-part module description format, screenshot placeholder text, and the up-to-six-round self-review enforced by generate_manual_draft.py."
+---
+
+The operation manual is a formal document addressed to copyright reviewers, not an end-user tutorial. The skill auto-generates it from your confirmed business understanding in `草稿/业务理解.json` and then runs multiple self-review rounds to ensure it reads as professional, project-specific prose — not a generic template. This page explains the required sections, writing standards, screenshot placeholder format, and the self-review process that `generate_manual_draft.py` enforces.
+
+## Required sections
+
+`manual_structure.md` lists eight common content areas that a well-formed operation manual typically covers. These are content guidelines, not a fixed template — chapter order, titles, and structure must follow the project's actual functionality, as expressed in the `manual_sections` field of `草稿/业务理解.json`.
+
+1. **软件概述** — What the software is, who it is for, and its core value. Written in objective, one-paragraph form.
+2. **适用对象与使用场景** — The target users and the operational context in which the software is used.
+3. **运行环境** — Hardware requirements, operating system, browser, and any supporting software needed to run the application.
+4. **进入软件** — How a user opens the software, logs in (if authentication exists), and reaches the main working interface.
+5. **主要功能概览** — A brief enumeration of all major modules, typically one or two sentences per module.
+6. **具体功能操作说明** — The main body of the manual: one section per core module, each covering purpose, user actions, and system feedback.
+7. **典型使用流程** — A numbered end-to-end sequence showing how a user moves through multiple modules to complete a real business task.
+8. **使用注意事项** — Operational notes such as browser compatibility, what to do when a page fails to load, and how to avoid duplicate submissions.
+
+If the confirmed `manual_sections` in `业务理解.json` specifies a different structure, the script follows that structure instead of the list above. The list is a fallback used only when `manual_sections` is empty.
+
+## Writing standards
+
+Every section and module description must meet the following standards. The script enforces them through three built-in self-review rounds, and additional rounds run automatically until no issues remain.
+
+**Use plain, objective Chinese.** The manual should be readable by a copyright reviewer or a non-technical reader. Describe what the user does and what the software shows them — do not describe the implementation.
+
+**Each module section must cover three things:**
+- **Purpose** — what this module is for, expressed in terms of the user's business goal.
+- **User actions** — the concrete steps the user takes on the page: what they fill in, what they click, what they choose.
+- **Outcome** — what the user sees after completing the actions (confirmation messages, updated lists, state changes, etc.).
+
+**No technical jargon.** The following terms must not appear in the manual:
+- Framework names: React, Vue, Next.js, Vite, FastAPI, LangGraph, Celery, SSE
+- Implementation terms: 接口 (API endpoints), 组件 (UI components), 路由 (routes), 状态管理 (state management), 异步任务 (async tasks), 数据持久化 (persistence)
+- `generate_manual_draft.py` applies `plain_manual_text()` to replace these automatically during drafting.
+
+**No AI-flavor language.** The following words and phrases are flagged by the self-review process and must be removed or rewritten:
+
+> 旨在、赋能、一站式、智能化、高效便捷、显著提升、强大能力、丰富功能、极大地、全方位、多维度、闭环、降本增效、优化体验、提升效率
+
+These phrases are generic and interchangeable across any software product. Each module description must be specific enough that it could not be copied unchanged to describe a different software application.
+
+**Minimum module body length.** The self-review checks that each `### N. 模块名称` section has at least 360 characters of body text. Sections shorter than this threshold trigger a "模块内容偏薄" issue and additional expansion rounds.
+
+## Screenshot placeholders
+
+When the user chooses to skip screenshots (screenshot method `skip`) or when screenshots have not yet been inserted, each module that requires a screenshot must contain a **visible placeholder** in the Word output:
+
+```text
+【截图预留：请在此处插入"功能名称"页面或操作结果截图。】
+```
+
+This text is written directly into the Markdown draft by `generate_manual_draft.py`. It appears in the final Word document as normal body text, not as an HTML comment. HTML comments (`<!-- ... -->`) are invisible in Word and must not be used as screenshot placeholders.
+
+The `build_docx_from_md.py` script also converts any `<!-- 截图 -->` comment patterns it encounters into the standard placeholder text during Word generation, as a safety net for manually edited drafts.
+
+The self-review counts screenshot placeholders and flags a quality issue if the count is less than the number of core modules.
+
+## Self-review record (操作手册自检记录.md)
+
+`generate_manual_draft.py` runs a minimum of three self-review rounds every time the manual is generated. The results are written to `草稿/操作手册自检记录.md` and `草稿/操作手册自检记录.json`.
+
+**Round 1 — Initial draft generation.** Builds the full manual from confirmed business context and checks for technical terms, template-style language, AI-flavor phrases, thin module sections, and missing screenshot placeholders.
+
+**Round 2 — Flow expansion.** Adds contextual bridging text between modules to reflect the project's actual business flow (e.g. "this step follows from the result of the previous module"). Re-runs quality checks.
+
+**Round 3 — De-templating and AI-tone removal.** Rewrites repetitive sentence openers, removes template markers such as "重要功能之一" and "通过清晰的页面入口", and normalizes phrasing. Re-runs quality checks.
+
+**Rounds 4–6 (automatic).** If any issues remain after round 3, the script continues running `repair_remaining_issues()` and appending round records until either all issues are resolved or six rounds have been completed. The final round's issue list is shown in `操作手册自检记录.md`.
+
+<AccordionGroup>
+  <Accordion title="Thin module descriptions (模块内容偏薄)">
+    **Symptom:** The body of a `### N. 模块名称` section has fewer than 360 characters.
+
+    **Fix:** Expand the module's `purpose`, `usage`, and `result` fields in the business context, or manually add one to two sentences describing the specific page elements, input fields, or business outcomes involved. The description must be traceable to evidence in the project — route names, page titles, README, or component names.
+  </Accordion>
+  <Accordion title="Template-style sentences (模板化表达)">
+    **Symptom:** The review log shows a marker such as "重要功能之一", "通过清晰的页面入口、信息展示和结果反馈", or "按照页面提示填写内容、选择资料、确认方案或点击提交按钮".
+
+    **Fix:** Replace with sentences that describe the actual page of this specific module — what the user fills in, what the list shows, what the confirmation message says. Generic sentences that could apply to any software are not acceptable.
+  </Accordion>
+  <Accordion title="Technical jargon (技术化表达)">
+    **Symptom:** The review log shows terms like "接口", "组件", "路由", "状态管理", or a framework name.
+
+    **Fix:** Rephrase using the user's perspective. For example: "调用接口" → "向软件发送请求"; "路由跳转" → "进入对应页面"; "组件渲染" → "页面展示内容". The `plain_manual_text()` function in the script handles most of these automatically during generation; manual edits may be needed for terms introduced after generation.
+  </Accordion>
+  <Accordion title="Missing user-facing outcomes (缺少操作后反馈说明)">
+    **Symptom:** A module section describes user actions but does not say what the user sees after completing them.
+
+    **Fix:** Add a sentence to the `result` field of the module: what message appears, what the list updates to, what state the page enters. This is especially important for form-submission and workflow-confirmation modules.
+  </Accordion>
+</AccordionGroup>

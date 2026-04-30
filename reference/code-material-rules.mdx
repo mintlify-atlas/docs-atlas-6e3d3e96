@@ -1,0 +1,61 @@
+---
+title: "Code material rules: pages, extraction, and file format"
+description: "Front-30/back-30 page split rules, 60-line-per-page calculation, Word format requirements, and source file priority order used by extract_code_material.py."
+---
+
+Chinese software copyright regulations (《计算机软件著作权登记办法》第十条) specify that code identification materials consist of the first and last consecutive 30 pages of the source program; when the program is fewer than 60 pages in total, the entire program is submitted. This page explains how the skill implements and enforces those rules through `extract_code_material.py` and the output files it writes.
+
+## Page calculation rule
+
+The skill uses **60 lines per page** (`LINES_PER_PAGE = 60` in `extract_code_material.py`). Word documents are formatted with compact, fixed line spacing to maximize page utilization within the A4 area defined by `build_docx_from_md.py`.
+
+The decision tree at extraction time works as follows:
+
+- **Total pages ≥ 60** — the skill writes two separate Markdown draft files: `草稿/代码-前30页.md` (pages 1–30) and `草稿/代码-后30页.md` (pages from `total_pages − 29` to `total_pages`). These become two separate Word documents in `正式资料/`.
+- **Total pages < 60, all candidates exhausted** — the skill writes a single `草稿/代码-全部.md` containing all pages. This produces one Word document named `{软件名称}-代码(全部).docx`.
+- **Total pages < 60, more unselected candidates remain** — the skill halts with `STOP_FOR_USER` and asks you to add more files to `草稿/代码文件选择.json`. This ensures you do not submit an under-sized code package when more usable source files exist.
+
+The 60-page threshold (`SPLIT_THRESHOLD_PAGES = 60`) is the same constant used in both `extract_code_material.py` and `propose_code_selection.py`, so the candidate inventory page estimate shown in `代码文件候选清单.md` uses identical arithmetic.
+
+## File format requirements
+
+These requirements are enforced by `build_docx_from_md.py` when converting draft Markdown to final Word documents.
+
+- **Page header** — every page must carry `{软件全称} {版本号}   第 N 页` in the right-aligned header. The software name and version are read from `草稿/申请表信息.md`, not from CLI arguments. If the CLI `--software-name` differs from the confirmed draft, the draft value wins.
+- **Page numbers** — page numbers are continuous across the entire document. The code Word uses Word's built-in `PAGE` field, so numbers update correctly when the document is opened in any Word processor.
+- **No AI-generated code** — all lines in the code material must trace back to real files in the project directory. The extraction script reads only files listed in the confirmed `代码文件选择.json`; it never synthesizes or supplements code.
+- **Text color** — all text in the output Word file must be black (`#000000`). `build_docx_from_md.py` calls `normalize_docx_text_color()` after every build, which strips hyperlink elements, rewrites every `<w:color>` tag to `000000`, and injects black color into any `<w:r>` run that lacks a `<w:rPr>` block. Colored headings, blue hyperlinks, and theme-colored text are not acceptable in submitted materials.
+- **Font** — code pages use Consolas at 7.2 pt with exact 12 pt line spacing, providing approximately 60 usable lines per A4 page at the configured margins. This is intentional and must not be changed to a proportional font.
+
+## Priority order for code extraction
+
+The model reads the confirmed business understanding before deciding which files to include. It does not blindly pull all project files. The priority order that `propose_code_selection.py` uses to sort candidates is:
+
+| Priority | Category | Examples |
+|----------|----------|---------|
+| 0 | Entry files | `main.ts`, `App.vue`, `src/app/page.tsx` |
+| 10 | Route definitions | Files under `/router/`, `/routes/`, `router.*` |
+| 20 | Pages and views | Files under `/pages/`, `/views/`, `/app/`, `/screens/` |
+| 30 | API / data-interaction | Files under `/api/`, `/apis/`, `/services/`, `request.*` |
+| 40 | State management | Files under `/store/`, `/stores/`, `/pinia/`, `/redux/`, `/zustand/` |
+| 50 | Core components | Files under `/components/` |
+| 60 | Utility functions | Files under `/utils/`, `/lib/`, `/hooks/`, `/composables/` |
+| 70 | Backend services | `/backend/app/`, `/server/`, `/models/`, `/schemas/`, `/workers/` |
+| 80 | Other source files | Any remaining code not matching the above |
+| 90 | Style files | `.css`, `.scss`, `.sass`, `.less` |
+| 95–100 | Config / supplementary | `docker-compose.yml`, `pyproject.toml`, YAML/TOML configs |
+
+Within this priority order, the model uses business understanding to decide which specific files best demonstrate the software's core functionality to a copyright reviewer. Files that are excluded regardless of priority include: `node_modules`, build output directories (`dist`, `build`, `.next`, `.nuxt`, `coverage`), lock files, binary assets, source maps, minified files, auto-generated files, and configuration files shorter than the minimum useful length.
+
+## 代码提取清单
+
+After every extraction run, `extract_code_material.py` writes two traceability files to `草稿/`:
+
+- **`代码提取清单.md`** — a human-readable Markdown table listing each extracted file, its total source line count, the selected line range (`selected_line_start`–`selected_line_end`), the number of selected lines, and the corresponding line range in the assembled material.
+- **`代码提取清单.json`** — a machine-readable copy of the same data, plus summary statistics: `material_line_count`, `total_pages`, `mode` (`front30_back30` or `all_under_60_pages`), and the output file names.
+
+These files are retained in `草稿/` even after final Word documents are built, so you can always verify which project files contributed to the submitted material.
+
+<Note>
+The skill is designed and tested for typical web and app projects that use standard directory conventions (pages, components, routes, services). Projects with non-standard layouts — monorepos, generated SDK clients, deeply nested structures, or projects where most source code lives in a single large file — may produce a candidate list that does not reflect actual module boundaries. In those cases, manually adjust `selected`, `start_line`, `end_line`, and `model_reason` in `草稿/代码文件选择.json` before running `confirm_stage.py --stage code-selection`.
+</Note>

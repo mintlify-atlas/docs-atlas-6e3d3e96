@@ -1,0 +1,72 @@
+---
+title: "Frequently asked questions about 软著 and this skill"
+description: "Answers to common questions about using SoftwareCopyright-Skill, the generated document package, and the software copyright registration process in China."
+---
+
+This page answers common questions about using SoftwareCopyright-Skill and the software copyright (软件著作权) registration process in China. If you have a question that is not covered here, open an issue at [https://github.com/Fokkyp/SoftwareCopyright-Skill](https://github.com/Fokkyp/SoftwareCopyright-Skill).
+
+<AccordionGroup>
+  <Accordion title="Is this skill really free?">
+    Yes. SoftwareCopyright-Skill is released under the MIT License. You can use it, copy it, modify it, and redistribute it at no cost. Any paid service claiming to package or operate this project on your behalf is a third-party reseller — the skill itself is and will remain free.
+  </Accordion>
+
+  <Accordion title="Do I need to submit printed materials?">
+    The standard registration path through China Copyright Protection Center's online portal is fully electronic. You upload PDF files through the website and do not need to mail physical documents for the standard online process. That said, requirements can change, so confirm the current process on the official portal before you begin.
+  </Accordion>
+
+  <Accordion title="What if my project version is 0.x?">
+    When the skill asks you to confirm the version number, you can choose to use **V1.0** instead of your project's current pre-release version. Most first-time software copyright registrations use V1.0 regardless of the actual development version, because the registration documents the initial published work rather than a specific iteration. The skill will present this choice as a confirmation gate and will not substitute a version without your explicit approval.
+  </Accordion>
+
+  <Accordion title="Can I use this for a project not written in JavaScript or TypeScript?">
+    Yes. The skill works for any project that has readable source files on disk. The `analyze_project.py` script detects common frontend frameworks automatically. For projects in other languages — Python, Go, Java, Swift, and so on — it falls back to extension-based file detection. If the automatic selection does not capture the files you want, you can review and adjust the code file list manually at the code-selection confirmation gate before any documents are generated.
+  </Accordion>
+
+  <Accordion title="What if my project has less than 60 pages of source code?">
+    When the extracted source code totals fewer than 60 pages, the skill generates a single `代码(全部).docx` file instead of the standard `代码(前30页).docx` and `代码(后30页).docx` pair. This is consistent with the regulations for projects below the 60-page threshold. Export this single file to PDF and upload it in place of the two separate files when submitting.
+  </Accordion>
+
+  <Accordion title="Does the skill upload anything to the internet?">
+    No. All analysis and document generation happens locally on your machine. Your source code, business logic descriptions, and generated materials never leave your local environment. The skill only reads files from your project directory and writes output back to that same directory.
+  </Accordion>
+
+  <Accordion title="What is the .NET SDK used for?">
+    The full DOCX generation path uses `vendor/docx-toolkit`, which requires .NET SDK to produce Word files via OpenXML with accurate heading styles, page layouts, and formatting validation. If .NET SDK is not installed, the skill falls back to a basic DOCX generator written in Python. Both paths produce valid `.docx` files that you can open in Word, WPS, or Pages — the full path has better heading hierarchy and layout fidelity. The skill will detect which path is available during the environment check at the start of each run and ask you how to proceed if the full path is unavailable.
+  </Accordion>
+
+  <Accordion title="Can I edit the generated Word files before submitting?">
+    Yes. The `.docx` files are standard editable Word documents. The skill generates them as a structured starting point; you should open and review them before exporting to PDF. Common edits include inserting screenshots, adjusting section wording to better reflect your product, and fixing any formatting issues introduced by the conversion. Make all edits in Word or WPS before you export to PDF, since the PDF is what gets uploaded to the portal.
+  </Accordion>
+
+  <Accordion title="What are the mandatory confirmation gates and why do they exist?">
+    The skill has 7 confirmation gates, each of which pauses the workflow until you explicitly confirm before proceeding:
+
+    1. **Environment gate** — confirms that the required tools are available and shows where output will be written.
+    2. **Project gate** — if multiple projects are detected, confirms which project you are generating materials for.
+    3. **Business understanding gate** — confirms the skill's summary of your software's purpose, audience, and key features before it writes any documents.
+    4. **Application-fields gate** — confirms every field that will appear in `申请表信息.txt`, including software name, version, dates, and environment details.
+    5. **Code-selection gate** — confirms which source files will be extracted as code material and in what order.
+    6. **Screenshot-method gate** — confirms how screenshots will be handled: via Chrome DevTools MCP, Codex Computer Use, manual placement, or skipped entirely.
+    7. **Markdown gate** — presents the full Markdown draft of the operation manual for your review before it is converted to DOCX.
+
+    These gates exist because incorrect information embedded in submitted materials can cause a correction request (补正) or rejection. Each gate gives you a checkpoint to catch and fix errors before they propagate into the final documents.
+  </Accordion>
+
+  <Accordion title="I skipped screenshots — will my operation manual still work?">
+    Yes. When you skip screenshots, the skill keeps visible placeholder text in both the Markdown draft and the final Word file at every point where a screenshot was expected. The placeholder looks like:
+
+    ```text
+    【截图预留：请在此处插入截图。】
+    ```
+
+    These placeholders are intentionally visible so you can find them quickly when you open the `.docx` file in Word. Replace each one with a real screenshot before exporting to PDF for submission.
+  </Accordion>
+
+  <Accordion title="How long does the full workflow take?">
+    For a typical medium-sized project, expect 30–60 minutes from starting the skill to having a complete document package, including your time at each confirmation gate. The business understanding gate tends to take the most time because you need to review and potentially correct the skill's interpretation of what your software does and how it works. Larger projects with complex business logic or many distinct user-facing features may take longer at that stage.
+  </Accordion>
+
+  <Accordion title="Where can I report issues or contribute?">
+    Open an issue or pull request at [https://github.com/Fokkyp/SoftwareCopyright-Skill](https://github.com/Fokkyp/SoftwareCopyright-Skill). Bug reports, documentation corrections, and language improvements are all welcome. If you are reporting a generation problem, include the contents of `软件著作权申请资料/环境检查.md` and a description of your project's technology stack to help with diagnosis.
+  </Accordion>
+</AccordionGroup>

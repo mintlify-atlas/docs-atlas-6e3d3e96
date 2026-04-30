@@ -1,0 +1,400 @@
+---
+title: "Python script reference: all 10 bundled commands"
+description: "Argparse-accurate reference for all 10 bundled scripts: purpose, required and optional arguments, output files, and STOP_FOR_USER gate behavior."
+---
+
+The skill bundles 10 Python scripts in `software-copyright-materials/scripts/`. Each script performs one discrete step in the workflow and writes its outputs to a configured working directory. This page documents every script's purpose, command signature, and argument table — derived directly from the argparse definitions in the source files.
+
+<Tip>
+See [Workflow overview](/workflow/overview) for the correct execution order and the confirmation gates between steps.
+</Tip>
+
+---
+
+## check_environment.py
+
+Checks runtime capabilities at the start of the workflow: whether `python-docx`, `pandoc`, and the `.NET SDK` / `docx-toolkit` vendor scripts are available. Determines the `final_docx_mode` (`docx-openxml`, `python-docx`, or `basic-ooxml`) and sets a `requires_user_input` flag if the full DOCX environment is not ready.
+
+```bash
+python3 scripts/check_environment.py --out-dir 软件著作权申请资料
+```
+
+<ParamField path="--out-dir" type="string" required>
+  Output directory for the environment check results. Defaults to `软件著作权申请资料`.
+</ParamField>
+
+**Outputs:** `{out-dir}/环境检查.md`, `{out-dir}/环境检查.json`
+
+If `requires_user_input` is `true`, the script prints `STOP_FOR_USER` and waits for you to choose between installing the full DOCX environment or continuing with the basic fallback. Record your choice with `confirm_stage.py --stage environment` before proceeding.
+
+---
+
+## analyze_project.py
+
+Analyzes the project directory and produces a structured JSON file containing frameworks, language, source statistics, route paths, and feature name candidates. All later scripts consume this JSON.
+
+```bash
+python3 scripts/analyze_project.py \
+  --project /path/to/your-project \
+  --out 软件著作权申请资料/analysis/project.json
+```
+
+<ParamField path="--project" type="string" required>
+  Absolute or relative path to the project root directory.
+</ParamField>
+
+<ParamField path="--out" type="string">
+  Output path for the analysis JSON. Defaults to `软件著作权申请资料/analysis/project.json`.
+</ParamField>
+
+**Outputs:** `project.json` containing:
+- `frameworks` — detected frontend frameworks (Vue, React, Next.js, Vite, etc.)
+- `language` — inferred programming language string
+- `source` — file count, line count, extension counts, categorized file paths
+- `routes` — extracted route path strings
+- `feature_candidates` — inferred feature names from route and page file paths
+- `readme_excerpt` — first 60 non-empty lines of the README
+
+---
+
+## generate_business_context.py
+
+Collects project evidence (documents, routes, components, API files) and either writes a model-draft template for the model to fill in, or — on the second call with `--model-context` — validates the model-authored JSON and writes the confirmed business context.
+
+This script is called **twice**:
+
+**First call** — collects evidence and writes the template:
+
+```bash
+python3 scripts/generate_business_context.py \
+  --project /path/to/your-project \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --software-name "软件全称" \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+**Second call** — validates and writes the confirmed business understanding:
+
+```bash
+python3 scripts/generate_business_context.py \
+  --project /path/to/your-project \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --software-name "软件全称" \
+  --out-dir 软件著作权申请资料/草稿 \
+  --model-context 软件著作权申请资料/草稿/业务理解模型稿.json
+```
+
+<ParamField path="--project" type="string" required>
+  Absolute or relative path to the project root directory.
+</ParamField>
+
+<ParamField path="--analysis" type="string" required>
+  Path to the `project.json` produced by `analyze_project.py`.
+</ParamField>
+
+<ParamField path="--software-name" type="string" required>
+  Candidate software name used to label evidence files and the business context draft.
+</ParamField>
+
+<ParamField path="--out-dir" type="string" required>
+  Output directory for all generated draft files.
+</ParamField>
+
+<ParamField path="--model-context" type="string">
+  Path to the model-authored JSON file (filled from `业务理解模型稿模板.json`). When provided, the script validates the JSON and writes the final business context. Omit on the first call.
+</ParamField>
+
+<ParamField path="--web-notes" type="string">
+  Path to a plain-text file containing notes from external or competitor research. Optional; used to supplement project evidence when the README or docs are sparse.
+</ParamField>
+
+**First call outputs:** `草稿/业务理解证据.md`, `草稿/业务理解证据.json`, `草稿/业务理解模型稿模板.json`
+
+**Second call outputs:** `草稿/业务理解.md`, `草稿/业务理解.json`
+
+---
+
+## propose_code_selection.py
+
+Inventories all eligible source files in the project and writes a candidate list. The model must then read the business understanding, set `selected`, `start_line`, `end_line`, and `model_reason` for each chosen file, and get user confirmation before extraction begins.
+
+```bash
+python3 scripts/propose_code_selection.py \
+  --project /path/to/your-project \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+<ParamField path="--project" type="string" required>
+  Absolute or relative path to the project root directory.
+</ParamField>
+
+<ParamField path="--analysis" type="string">
+  Path to `project.json`. Retained for workflow traceability; not required for the candidate scan itself.
+</ParamField>
+
+<ParamField path="--out-dir" type="string">
+  Output directory. Defaults to `软件著作权申请资料/草稿`.
+</ParamField>
+
+<ParamField path="--max-files" type="integer">
+  Limits the candidate inventory size. Does not auto-select files; defaults to `0` (no limit).
+</ParamField>
+
+<ParamField path="--target-pages" type="integer">
+  Target page count for the split threshold. Defaults to `60`.
+</ParamField>
+
+<ParamField path="--lines-per-page" type="integer">
+  Lines per page for page count estimation. Defaults to `60`.
+</ParamField>
+
+**Outputs:** `草稿/代码文件候选清单.md`, `草稿/代码文件选择.json`
+
+---
+
+## extract_code_material.py
+
+Reads the confirmed `代码文件选择.json`, extracts the selected line ranges from the real project files, paginates at 60 lines per page, and writes the code draft Markdown files. If total pages ≥ 60, two separate front/back files are written; otherwise a single combined file is written.
+
+```bash
+python3 scripts/extract_code_material.py \
+  --project /path/to/your-project \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --selection 软件著作权申请资料/草稿/代码文件选择.json \
+  --software-name "软件全称" \
+  --version V1.0 \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+<ParamField path="--project" type="string" required>
+  Absolute or relative path to the project root directory.
+</ParamField>
+
+<ParamField path="--analysis" type="string">
+  Path to `project.json`. Retained for workflow traceability.
+</ParamField>
+
+<ParamField path="--selection" type="string">
+  Path to the confirmed `代码文件选择.json`. Required for extraction; the script halts with `STOP_FOR_USER` if this file is missing or not yet confirmed.
+</ParamField>
+
+<ParamField path="--software-name" type="string" required>
+  Software name written into the draft file headers and manifest.
+</ParamField>
+
+<ParamField path="--version" type="string">
+  Version string written into the draft file headers. Defaults to `V1.0`.
+</ParamField>
+
+<ParamField path="--out-dir" type="string">
+  Output directory. Defaults to `软件著作权申请资料/草稿`.
+</ParamField>
+
+<ParamField path="--lines-per-page" type="integer">
+  Lines per page. Defaults to `60`.
+</ParamField>
+
+**Outputs (≥ 60 pages):** `草稿/代码-前30页.md`, `草稿/代码-后30页.md`, `草稿/代码提取清单.md`, `草稿/代码提取清单.json`
+
+**Outputs (< 60 pages):** `草稿/代码-全部.md`, `草稿/代码提取清单.md`, `草稿/代码提取清单.json`
+
+---
+
+## generate_application_info.py
+
+Generates the application form information Markdown draft (`草稿/申请表信息.md`) by combining project analysis, the code extraction manifest, the confirmed business context, and current machine hardware/OS readings. Requires a confirmed business context; halts with `STOP_FOR_USER` if `业务理解.json` is missing or unconfirmed.
+
+```bash
+python3 scripts/generate_application_info.py \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --code-manifest 软件著作权申请资料/草稿/代码提取清单.json \
+  --business-context 软件著作权申请资料/草稿/业务理解.json \
+  --software-name "软件全称" \
+  --version V1.0 \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+<ParamField path="--analysis" type="string" required>
+  Path to `project.json` produced by `analyze_project.py`.
+</ParamField>
+
+<ParamField path="--code-manifest" type="string" required>
+  Path to `代码提取清单.json` produced by `extract_code_material.py`.
+</ParamField>
+
+<ParamField path="--business-context" type="string" required>
+  Path to the confirmed `业务理解.json`. The script verifies that `user_confirmed` is `true` before proceeding.
+</ParamField>
+
+<ParamField path="--software-name" type="string" required>
+  Candidate software name used to populate the 软件全称 suggestion.
+</ParamField>
+
+<ParamField path="--version" type="string">
+  Candidate version. Defaults to `V1.0`. If the project's `package.json` version is below `V1.0`, the script inserts a version-confirmation prompt.
+</ParamField>
+
+<ParamField path="--out-dir" type="string">
+  Output directory. Defaults to `软件著作权申请资料/草稿`.
+</ParamField>
+
+<ParamField path="--answers" type="string">
+  Optional path to a JSON file containing pre-confirmed field values (key/value pairs matching field names). Merged over the generated defaults.
+</ParamField>
+
+**Outputs:** `草稿/申请表信息.md`
+
+---
+
+## generate_manual_draft.py
+
+Generates the operation manual Markdown draft from the confirmed business context. Runs a minimum of three internal self-review rounds (and up to six if issues persist) and writes the review log alongside the manual.
+
+```bash
+python3 scripts/generate_manual_draft.py \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --business-context 软件著作权申请资料/草稿/业务理解.json \
+  --software-name "软件全称" \
+  --version V1.0 \
+  --out-dir 软件著作权申请资料/草稿
+```
+
+<ParamField path="--analysis" type="string" required>
+  Path to `project.json` produced by `analyze_project.py`.
+</ParamField>
+
+<ParamField path="--business-context" type="string">
+  Path to the confirmed `业务理解.json`. The script verifies that `user_confirmed` is `true`. Halts with `STOP_FOR_USER` if missing or unconfirmed.
+</ParamField>
+
+<ParamField path="--software-name" type="string" required>
+  Software name used in the manual title and body.
+</ParamField>
+
+<ParamField path="--version" type="string">
+  Version string used in the software overview section. Defaults to `V1.0`.
+</ParamField>
+
+<ParamField path="--out-dir" type="string">
+  Output directory. Defaults to `软件著作权申请资料/草稿`.
+</ParamField>
+
+**Outputs:** `草稿/操作手册.md`, `草稿/操作手册自检记录.md`, `草稿/操作手册自检记录.json`
+
+---
+
+## capture_screenshots.py
+
+Organizes user-supplied screenshots into the standard output directory and writes a manifest, or — when `--base-url` and `--analysis` are provided instead of `--manual-dir` — uses Playwright to capture screenshots automatically from a running application.
+
+```bash
+# User-supplied screenshots mode
+python3 scripts/capture_screenshots.py \
+  --manual-dir /path/to/your-screenshots \
+  --out-dir 软件著作权申请资料/截图
+
+# Automated capture mode (requires Playwright)
+python3 scripts/capture_screenshots.py \
+  --base-url http://localhost:3000 \
+  --analysis 软件著作权申请资料/analysis/project.json \
+  --out-dir 软件著作权申请资料/截图
+```
+
+<ParamField path="--manual-dir" type="string">
+  Directory containing user-supplied screenshot image files (`.png`, `.jpg`, `.jpeg`, `.webp`). When provided, the script copies and renames them into `--out-dir` in sorted order and writes `截图清单.json`. Either `--manual-dir` or both `--base-url` and `--analysis` must be provided.
+</ParamField>
+
+<ParamField path="--out-dir" type="string">
+  Output directory for organized screenshots and the manifest. Defaults to `软件著作权申请资料/截图`.
+</ParamField>
+
+<ParamField path="--base-url" type="string">
+  Base URL of the running application. Required for automated Playwright capture. Not used when `--manual-dir` is provided.
+</ParamField>
+
+<ParamField path="--analysis" type="string">
+  Path to `project.json`. Used in automated mode to extract route paths for screenshot capture. Not used when `--manual-dir` is provided.
+</ParamField>
+
+<ParamField path="--max-pages" type="integer">
+  Maximum number of routes to capture in automated mode. Defaults to `8`.
+</ParamField>
+
+**Outputs:** `截图/` directory with renamed image files, `截图/截图清单.json`
+
+---
+
+## build_docx_from_md.py
+
+Converts confirmed Markdown drafts into final Word documents and the application-form TXT. Checks all six confirmation gates before proceeding. If any gate is unrecorded, prints `STOP_FOR_USER` with a checklist and exits with code 2.
+
+```bash
+python3 scripts/build_docx_from_md.py \
+  --workdir 软件著作权申请资料 \
+  --software-name "软件全称" \
+  --version V1.0
+```
+
+<ParamField path="--workdir" type="string">
+  Path to the working directory containing `草稿/` and confirmation JSON files. Defaults to `软件著作权申请资料`.
+</ParamField>
+
+<ParamField path="--software-name" type="string" required>
+  Software name used as a fallback if `草稿/申请表信息.md` is missing or its 软件全称 field is unconfirmed. The confirmed draft value always takes precedence.
+</ParamField>
+
+<ParamField path="--version" type="string">
+  Version fallback. Same precedence rule as `--software-name`. Defaults to `V1.0`.
+</ParamField>
+
+<ParamField path="--skip-preview" type="boolean">
+  Skip the DOCX validation pass using `vendor/docx-toolkit`. Useful in environments where the vendor scripts are not available.
+</ParamField>
+
+**Outputs:** `正式资料/` directory containing:
+- `申请表信息.txt`
+- `{软件名称}-代码(前30页).docx` and `{软件名称}-代码(后30页).docx` (if ≥ 60 pages), or `{软件名称}-代码(全部).docx` (if < 60 pages)
+- `{软件名称}_操作手册.docx`
+- `生成报告.md` with output file sizes, warnings, and DOCX validation results
+
+---
+
+## confirm_stage.py
+
+Records explicit user confirmations for each gated stage of the workflow. Each stage writes a JSON confirmation record that the next scripts check before running.
+
+```bash
+python3 scripts/confirm_stage.py \
+  --workdir 软件著作权申请资料 \
+  --stage <stage-name> \
+  --note "用户已确认"
+```
+
+<ParamField path="--workdir" type="string">
+  Path to the working directory. Defaults to `软件著作权申请资料`.
+</ParamField>
+
+<ParamField path="--stage" type="string" required>
+  The stage to confirm. Valid values:
+
+  | Value | What it confirms | Output file |
+  |-------|-----------------|-------------|
+  | `environment` | DOCX environment choice | `环境确认.json` |
+  | `project` | Project analysis review | `项目确认.json` |
+  | `business` | Business context review | Updates `草稿/业务理解.json` |
+  | `application-fields` | All 申请表 fields filled | `草稿/申请表字段确认.json` |
+  | `code-selection` | Code file selection review | Updates `草稿/代码文件选择.json` |
+  | `screenshot-method` | Screenshot capture method | `截图方式确认.json` |
+  | `markdown` | Final Markdown draft review | `草稿/最终生成确认.json` |
+</ParamField>
+
+<ParamField path="--note" type="string">
+  A human-readable note describing what was confirmed. Defaults to `用户已确认`. Stored in the confirmation JSON for traceability.
+</ParamField>
+
+<ParamField path="--method" type="string">
+  Required when `--stage screenshot-method`. Valid values: `chrome-devtools`, `computer-use`, `user-supplied`, `skip`. Natural-language inputs (e.g. "不截图", "跳过") are also accepted and mapped to `skip`.
+</ParamField>
+
+**Outputs:** confirmation record JSON in `--workdir` (see table above)

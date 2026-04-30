@@ -1,81 +1,169 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
-icon: 'rocket'
+title: "Quickstart: generate a complete 软著 application"
+description: "Walk through all 10 workflow stages from environment check to receiving finished Word documents and 申请表信息.txt in 软件著作权申请资料/正式资料/."
 ---
 
-## Get started in three steps
+This page walks you from a freshly installed skill to a complete set of 软著 application materials in a single Codex session. Each stage has a mandatory confirmation gate — the skill will stop and wait for your input before moving on. You do not need to prepare anything in advance beyond having your project open in Codex.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Open your project in Codex">
+    Start a Codex session with the project you want to register as the working directory. The skill scans the current directory to locate your source tree, so the project you want must be accessible from where Codex is running.
 
-### Step 1: Set up your local environment
+    If multiple candidate project directories exist in the current folder, the skill will stop and ask you to pick one before continuing.
+  </Step>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+  <Step title="Ask Codex to generate the materials">
+    Trigger the skill by sending the following prompt exactly as written:
 
-### Step 2: Deploy your changes
+    ```text
+    使用 software-copyright-materials 生成当前项目的软件著作权申请资料
+    ```
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    Codex will recognize the skill by name, load `SKILL.md`, and begin the workflow from the environment check.
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Environment check">
+    The skill immediately runs `check_environment.py` and writes two files:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```text
+    软件著作权申请资料/环境检查.md
+    软件著作权申请资料/环境检查.json
+    ```
 
-### Step 3: Go live
+    The check reports:
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    - Whether Markdown drafts, `申请表信息.txt`, and basic DOCX generation are available (always yes).
+    - Whether `python-docx` is installed.
+    - Whether `.NET SDK` is present and the bundled `vendor/docx-toolkit` full OpenXML environment is ready.
+    - Which DOCX generation mode will be used: `docx-openxml` (full), `python-docx`, or `basic-ooxml` (fallback).
+    - Where output will be written (`当前目录/软件著作权申请资料`).
 
-## Next steps
+    If the full DOCX environment is not ready, the skill stops and asks you to choose:
 
-Now that you have your docs running, explore these key features:
+    1. Install the full DOCX environment (runs `vendor/docx-toolkit/scripts/setup.sh`).
+    2. Continue with the basic DOCX fallback.
 
-<CardGroup cols={2}>
+    The skill will not proceed until you respond. It will not install anything without your confirmation.
+  </Step>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+  <Step title="Business understanding">
+    The skill analyzes your project — reading `package.json`, README, routes, pages, components, and interfaces — and generates a business understanding draft:
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+    ```text
+    软件著作权申请资料/草稿/业务理解.md
+    软件著作权申请资料/草稿/业务理解.json
+    ```
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+    This draft covers the software's industry and domain, target users, core value, main business functions, typical operation flow, and a suggested application form description. It is derived from your actual project files, not a generic template.
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+    **You must confirm this stage.** Review the draft and tell Codex whether the industry classification, target user description, and core function summary are accurate. If the business understanding is off, correct it here — the operation manual and application form fields are built on top of it.
+  </Step>
 
-</CardGroup>
+  <Step title="Application form fields">
+    Based on the project analysis and your confirmed business understanding, the skill proposes values for every application form field:
+
+    - Software full name (软件全称)
+    - Version number (版本号) — if the project version is below V1.0, the skill will explicitly ask whether to file as V1.0
+    - Copyright holder (著作权人)
+    - Development completion date and first publication date
+    - Development hardware environment (proposed from your machine's specs where readable)
+    - Runtime hardware environment
+    - Development operating system
+    - Runtime platform / operating system
+    - Development tool (IDE or editor name — not the tech stack)
+    - Runtime support software (Node.js, Python, Docker, databases, browsers, etc.)
+    - Software classification and technical characteristics
+
+    The skill stops and presents these proposed values. You must confirm or correct each field — especially hardware and OS fields, which cannot be inferred automatically. After you respond, the skill generates:
+
+    ```text
+    软件著作权申请资料/草稿/申请表信息.md
+    ```
+
+    You will review this file one more time in the final Markdown confirmation gate before Word is generated.
+  </Step>
+
+  <Step title="Code file selection">
+    The skill runs `propose_code_selection.py` to build a candidate file list. It then reads the candidate files alongside your project structure and business understanding to select the files that best represent your software's actual functions and runtime logic — typically frontend entry points, routes, pages, core components, API wrappers, and state management.
+
+    The skill writes its selections (with reasons) to:
+
+    ```text
+    软件著作权申请资料/草稿/代码文件候选清单.md
+    软件著作权申请资料/草稿/代码文件选择.json
+    ```
+
+    **You must confirm this selection.** Review the candidate list and the proposed choices. You can modify `代码文件选择.json` directly — set `selected: true` or `false` for any file, and optionally set `start_line` / `end_line` to extract only part of a file. The skill only extracts the files and line ranges you confirm.
+
+    If the confirmed selection would produce fewer than 60 pages and more candidate files exist, the skill stops again and asks you to add more files before continuing.
+  </Step>
+
+  <Step title="Operation manual draft">
+    The skill generates `草稿/操作手册.md` based on the confirmed business understanding and project analysis. The draft is written for copyright reviewers: plain language, module-by-module, with each section explaining what the module does, how a user operates it, and what they see as a result. Technical implementation details (framework names, API internals, async queues) are deliberately excluded.
+
+    Before showing you the draft, the skill completes at least three internal self-review passes, recorded in:
+
+    ```text
+    软件著作权申请资料/草稿/操作手册自检记录.md
+    软件著作权申请资料/草稿/操作手册自检记录.json
+    ```
+
+    Round 1 checks section completeness, screenshot placeholders, and content depth. Round 2 expands module descriptions to cover upstream/downstream flow. Round 3 strips template language, AI filler phrases, and over-symmetrical patterns. If issues remain after round 3, the skill continues revising before it presents the draft to you.
+
+    **You confirm the operation manual once** — after all self-review passes are complete. You do not review intermediate rounds.
+  </Step>
+
+  <Step title="Screenshot method">
+    After the operation manual draft is ready, the skill stops and asks you to choose a screenshot method. You must pick one of the following four options:
+
+    1. **Chrome DevTools MCP** — for web projects already running in a browser. The skill uses `list_pages` to find open tabs and captures full-page screenshots route by route.
+    2. **Codex Computer Use** — for projects where you need to navigate a desktop application or browser interface before capturing.
+    3. **User-supplied screenshots** — place your own PNG/JPG/JPEG/WebP screenshots in `软件著作权申请资料/用户截图/` and the skill will copy and reference them.
+    4. **Skip** — if you choose to skip screenshots now, the operation manual retains visible placeholder text at every screenshot position (for example: `【截图预留：请在此处插入"项目管理"页面或操作结果截图。】`). These placeholders appear in the final Word document so you can insert screenshots manually later.
+
+    The skill records your choice as a gate before checking whether the chosen tool is actually available in your current environment.
+  </Step>
+
+  <Step title="Markdown confirmation">
+    Before generating any Word or TXT output, the skill stops for a final review of all drafts in `软件著作权申请资料/草稿/`. This is your last opportunity to catch and fix inconsistencies.
+
+    The checklist covers:
+
+    - Software name and version number are identical across all drafts.
+    - Code document headers match `申请表信息.md` exactly.
+    - Business understanding accurately reflects the real project.
+    - All "待用户确认" fields in `申请表信息.md` have been filled.
+    - Code material comes only from the files and line ranges you confirmed.
+    - Operation manual language is readable by a non-technical reviewer.
+    - Screenshot placeholders are visible if screenshots were skipped.
+
+    Reply to confirm you are ready to generate the formal output. The skill records the `markdown` gate and then proceeds.
+  </Step>
+
+  <Step title="Word and TXT generation">
+    The skill runs `build_docx_from_md.py` using the confirmed software name and version number from `草稿/申请表信息.md` (the form values take precedence over any command-line arguments). Output lands in:
+
+    ```text
+    软件著作权申请资料/正式资料/
+    ```
+
+    After generation, the skill performs three validation rounds: file completeness, code traceability back to your source files, and consistency of software name, version, and page rules across all documents. Any issues found are fixed before the run finishes.
+  </Step>
+</Steps>
+
+## What you receive
+
+After the workflow completes, `软件著作权申请资料/正式资料/` contains:
+
+| File | How to use it |
+|---|---|
+| `申请表信息.txt` | Open it alongside the official filing form at [register.ccopyright.com.cn](https://register.ccopyright.com.cn) and copy fields directly into the web form. |
+| `<软件全称>_操作手册.docx` | Open in Word, WPS, or Pages. Export to PDF before uploading to the official site. |
+| `<软件全称>-代码(前30页).docx` | Export to PDF before uploading. Generated when total code pages ≥ 60. |
+| `<软件全称>-代码(后30页).docx` | Export to PDF before uploading. Generated when total code pages ≥ 60. |
+| `<软件全称>-代码(全部).docx` | Export to PDF before uploading. Generated when total code pages < 60 and all candidate files are exhausted. |
+| `生成报告.md` | Generation log showing which DOCX mode was used, any field overrides, and validation results. |
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  For a detailed breakdown of each workflow stage — including the exact scripts that run, the intermediate files produced, and the confirmation gate protocol — see [Workflow overview](/workflow/overview).
 </Note>

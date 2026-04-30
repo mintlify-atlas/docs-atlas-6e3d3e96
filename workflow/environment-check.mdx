@@ -1,0 +1,67 @@
+---
+title: "Environment check: DOCX mode and .NET SDK setup"
+description: "How check_environment.py probes seven capabilities, selects docx-openxml/python-docx/basic-ooxml mode, and blocks on the environment gate when .NET is absent."
+---
+
+The environment check is always the first thing the skill runs. Before any project analysis or draft generation begins, `check_environment.py` probes the current machine for Python 3, the bundled `vendor/docx-toolkit`, and the .NET SDK that is required for full OpenXML DOCX output. The result determines which Word generation path will be used for the rest of the workflow, and you must make an explicit choice before the skill continues if the full path is not available.
+
+## Run the check
+
+```bash
+python3 scripts/check_environment.py --out-dir 软件著作权申请资料
+```
+
+The script creates the output directory if it does not already exist, then writes two files and prints a summary to the terminal.
+
+## What it checks
+
+The script tests seven capabilities and reports the status of each:
+
+| Capability | What it requires |
+| --- | --- |
+| Markdown drafts | Always available |
+| Application form TXT | Always available |
+| Basic DOCX generation | Always available (minimal OpenXML fallback) |
+| `python-docx` | The `python-docx` library installed in the Python environment |
+| pandoc preview | `pandoc` binary on PATH |
+| `.NET SDK` | `dotnet` binary on PATH |
+| Full OpenXML DOCX | `.NET SDK` present **and** `vendor/docx-toolkit/scripts/env_check.sh` passes |
+
+The script also reports:
+
+- The **output directory** where all materials will be written (`当前目录/软件著作权申请资料`)
+- The **final DOCX mode** that will be used: `docx-openxml` (full), `python-docx` (intermediate), or `basic-ooxml` (minimal fallback)
+- The detected **pandoc** and **.NET SDK** versions, or `"not found"` if absent
+
+## Output files
+
+After the script completes, two files are written to the output directory:
+
+- `软件著作权申请资料/环境检查.md` — human-readable capability summary and recommendation
+- `软件著作权申请资料/环境检查.json` — machine-readable capability map used by downstream scripts
+
+## Choosing your DOCX mode
+
+If the `.NET SDK` is absent or `vendor/docx-toolkit/scripts/env_check.sh` does not pass, the full OpenXML environment is unavailable. The skill stops and presents you with two options:
+
+**Option 1 — Install the full environment.** Run the setup script bundled with the skill:
+
+```bash
+bash vendor/docx-toolkit/scripts/setup.sh
+```
+
+After installation, re-run `check_environment.py` to confirm the environment is ready. The full environment produces more standards-compliant Word files and enables the built-in DOCX validation pass.
+
+**Option 2 — Continue with the basic DOCX fallback.** The skill will generate Markdown drafts, `申请表信息.txt`, and basic `.docx` files using `python-docx` or a minimal OpenXML fallback. The output is functionally complete but does not go through the full OpenXML validation step.
+
+Once you have made your choice, record the gate so the workflow can continue:
+
+```bash
+python3 scripts/confirm_stage.py --workdir 软件著作权申请资料 --stage environment --note "<用户选择>"
+```
+
+Replace `<用户选择>` with a short note describing your decision, for example `"使用基础 DOCX 兜底"` or `"已安装完整环境"`.
+
+<Warning>
+The skill will hard-stop if the `.NET SDK` is absent and no `environment` gate has been recorded. It will not auto-select a fallback and proceed silently. The `STOP_FOR_USER` and `NEXT_ACTION` messages are printed to the terminal and written to `环境检查.md` — Codex must surface them to you and wait for your reply before calling any subsequent script.
+</Warning>

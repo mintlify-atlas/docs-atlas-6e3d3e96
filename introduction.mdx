@@ -1,0 +1,66 @@
+---
+title: "SoftwareCopyright-Skill: Overview and requirements"
+description: "What SoftwareCopyright-Skill does, the four output files it generates, its core design principles, and the Python/Codex environment it requires."
+---
+
+SoftwareCopyright-Skill is a free, open-source Codex Skill that automates the document preparation stage of Chinese software copyright (软件著作权, 软著) registration. Applying for 软著 is not technically difficult, but gathering the right materials is genuinely tedious: the application form has many specific fields, the operation manual must read coherently to a reviewer, and the code excerpts must follow the front-30-pages / back-30-pages rule with consistent headers. Many developers end up paying intermediary services just to have someone else handle that document work. SoftwareCopyright-Skill eliminates that need entirely — it reads your real project locally, walks you through every decision with mandatory confirmation gates, and produces a complete, editable output package without sending your code or product details anywhere.
+
+## What it generates
+
+After you confirm the final Markdown drafts, the skill runs `build_docx_from_md.py` and writes all formal output to a single directory inside your project:
+
+```text
+软件著作权申请资料/正式资料/
+├── 申请表信息.txt
+├── <软件全称>_操作手册.docx
+├── <软件全称>-代码(前30页).docx   ← when total code pages ≥ 60
+└── <软件全称>-代码(后30页).docx   ← when total code pages ≥ 60
+```
+
+When extracted code totals fewer than 60 pages and no additional candidate files are available, a single `<软件全称>-代码(全部).docx` is generated instead of the front/back split.
+
+| File | Purpose |
+|---|---|
+| `申请表信息.txt` | Copy-paste reference for filling in the official online form. Not uploaded directly. |
+| `操作手册.docx` | Operation manual addressed to copyright reviewers. Convert to PDF before uploading. |
+| `代码(前30页).docx` | Front 30 pages of code identification material. Convert to PDF before uploading. |
+| `代码(后30页).docx` | Back 30 pages of code identification material. Convert to PDF before uploading. |
+
+All filenames embed the confirmed software full name (软件全称), so they stay consistent with the application form fields.
+
+## Key principles
+
+<CardGroup cols={2}>
+  <Card title="Real source code only" icon="code">
+    Code identification materials are extracted exclusively from your existing project files. The skill never instructs the AI to invent or fabricate source code, which matters for applications where material authenticity is scrutinized.
+  </Card>
+  <Card title="Local generation" icon="lock">
+    Everything is generated inside your current project directory. No code, drafts, or product details leave your machine. The default output root is `软件著作权申请资料/` inside whichever directory Codex is working in.
+  </Card>
+  <Card title="Mandatory confirmation gates" icon="shield-check">
+    The skill pauses at seven defined checkpoints — environment choice, business understanding, application fields, code file selection, screenshot method, Markdown review, and final Word generation — and will not proceed until you respond.
+  </Card>
+  <Card title="Free and MIT-licensed" icon="scale-balanced">
+    The project is released under the MIT License. You can use it, modify it, and redistribute it freely. No subscription, no usage fee, no account required.
+  </Card>
+</CardGroup>
+
+<Note>
+  This project is completely free. Do not pay for any service that claims to package or resell it. The skill generates materials locally from your own project — there is no hosted component and no paid tier.
+</Note>
+
+## Requirements
+
+### Required
+
+- **Python 3** — all analysis, code extraction, and output scripts are Python. The scripts live in `software-copyright-materials/scripts/` and run directly in your environment.
+- **Codex** — SoftwareCopyright-Skill is a Codex Skill. You must be running it inside a Codex session; it cannot be used as a standalone command-line tool without Codex.
+- **A real, readable project** — the skill extracts code from an actual source tree. It needs to be able to read your project files from disk.
+
+### Optional
+
+- **.NET SDK** — enables the full OpenXML DOCX generation and validation path via the bundled `vendor/docx-toolkit`. Without it, the skill falls back to a basic DOCX generation method. The environment check at the start of every run tells you which mode is active and offers to install the full environment before proceeding.
+- **Chrome DevTools MCP** — required only if you want the skill to automatically capture screenshots of your running web application for the operation manual.
+- **Codex Computer Use** — required only if you want to navigate a desktop or browser interface and capture screenshots that way.
+
+If neither Chrome DevTools MCP nor Computer Use is available, you can place your own PNG/JPG screenshots in `软件著作权申请资料/用户截图/` and the skill will reference them, or you can skip screenshots entirely — the operation manual will retain visible placeholder text for each screenshot position.

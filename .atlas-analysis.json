@@ -1,0 +1,78 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "SoftwareCopyright-Skill",
+  "projectDescription": "A Codex Skill that automatically generates complete Chinese software copyright (软著) application materials — including application form info, operation manual, and code excerpts in Word/TXT format — from a real local project.",
+  "theme": "palm",
+  "primaryColor": "#2563EB",
+  "lightColor": "#EFF6FF",
+  "darkColor": "#1E3A8A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Workflow",
+            "pages": [
+              "workflow/overview",
+              "workflow/environment-check",
+              "workflow/project-analysis",
+              "workflow/business-understanding",
+              "workflow/code-selection",
+              "workflow/manual-generation",
+              "workflow/docx-output"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/application-fields",
+              "reference/code-material-rules",
+              "reference/manual-guidelines",
+              "reference/scripts"
+            ]
+          },
+          {
+            "group": "Submission Guide",
+            "pages": [
+              "submission/filing-process",
+              "submission/faq"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Fully guided workflow with mandatory user confirmation gates at every critical step",
+    "Extracts real source code — AI-generated code is strictly prohibited",
+    "Automatic front-30-page / back-30-page code material rule compliance",
+    "Generates operation manual tailored to the project's actual business logic, not templates",
+    "Produces Word (.docx) and TXT output files ready for official submission",
+    "Environment check with fallback to basic DOCX mode when .NET SDK is unavailable",
+    "Screenshot integration via Chrome DevTools MCP, Codex Computer Use, or manual upload",
+    "All materials generated locally — no code or project details leave the developer's machine",
+    "Complete demo output included in repository for reference",
+    "MIT licensed and completely free — no paid intermediary services needed"
+  ],
+  "publicApiSurface": [
+    "python3 scripts/check_environment.py --out-dir <dir>",
+    "python3 scripts/analyze_project.py --project <dir> --out <json>",
+    "python3 scripts/generate_business_context.py --project <dir> --analysis <json> --software-name <name> --out-dir <dir>",
+    "python3 scripts/generate_application_info.py --analysis <json> --code-manifest <json> --business-context <json> --software-name <name> --version <ver> --out-dir <dir>",
+    "python3 scripts/propose_code_selection.py --project <dir> --analysis <json> --out-dir <dir>",
+    "python3 scripts/extract_code_material.py --project <dir> --analysis <json> --selection <json> --software-name <name> --version <ver> --out-dir <dir>",
+    "python3 scripts/generate_manual_draft.py --analysis <json> --business-context <json> --software-name <name> --version <ver> --out-dir <dir>",
+    "python3 scripts/capture_screenshots.py --manual-dir <dir> --out-dir <dir>",
+    "python3 scripts/build_docx_from_md.py --workdir <dir> --software-name <name> --version <ver>",
+    "python3 scripts/confirm_stage.py --workdir <dir> --stage <stage> --note <note>"
+  ]
+}

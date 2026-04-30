@@ -1,0 +1,85 @@
+---
+title: "How to file your 软著 application at the CCPC portal"
+description: "Step-by-step guide for the CCPC online portal: fill the form from 申请表信息.txt, export DOCX files to PDF, upload materials, and track your application."
+---
+
+Once the skill has finished running, you will have a `软件著作权申请资料/正式资料/` directory containing a `申请表信息.txt` text file, one or more `.docx` code files, and an `操作手册.docx` operation manual. The actual registration happens through China Copyright Protection Center's online filing system. This page walks through that process step by step, referencing the files the skill generates at each stage.
+
+<Note>
+  Official website pages may change after this guide was written. Always follow the current instructions displayed on the filing portal, and treat this page as a general orientation rather than a definitive checklist.
+</Note>
+
+## Filing steps
+
+<Steps>
+  <Step title="Open the filing system">
+    Navigate to [https://register.ccopyright.com.cn/login.html](https://register.ccopyright.com.cn/login.html) and log in with your account. If you do not have an account yet, register first and complete the real-name verification (实名认证) process before continuing — you cannot submit an application without a verified account.
+  </Step>
+
+  <Step title="Start a new application">
+    Once logged in, locate the software copyright section and select **计算机软件著作权登记申请** to begin a new application. The exact label and page layout may vary depending on when you access the portal.
+  </Step>
+
+  <Step title="Fill in the application form">
+    Open `正式资料/申请表信息.txt` in any text editor. The file contains all the key fields the skill extracted and structured from your project:
+
+    - Software name (软件名称)
+    - Version number (版本号)
+    - Copyright holder (著作权人)
+    - Development completion date (开发完成日期)
+    - First publication date (首次发表日期)
+    - Hardware environment (硬件环境)
+    - Operating system environment (运行环境)
+    - Programming language (编程语言)
+    - Source code line count (源程序量)
+    - Feature description (功能描述)
+    - Technical characteristics (技术特点)
+
+    Copy and paste each value into the corresponding field on the online form. Review every field as you go — do not paste blindly without confirming the values match your actual project.
+  </Step>
+
+  <Step title="Export your .docx files to PDF">
+    Before uploading, you need to convert the Word files to PDF. Open each of the following files in Word, WPS Office, or Pages and use **Export** or **Save As** to produce a PDF:
+
+    - `操作手册.docx` — your operation manual
+    - `软件名称-代码(前30页).docx` — front 30 pages of source code
+    - `软件名称-代码(后30页).docx` — back 30 pages of source code
+
+    If your project has fewer than 60 pages of source code, the skill generates `代码(全部).docx` instead of the two separate files — export that single file to PDF instead.
+
+    <Tip>
+      You can edit the `.docx` files in Word or WPS before exporting. This is a good time to insert any screenshots you skipped during the skill run or to adjust formatting.
+    </Tip>
+  </Step>
+
+  <Step title="Upload materials">
+    On the upload step of the online form, attach the PDF versions of the files you exported:
+
+    - `操作手册.pdf`
+    - `代码(前30页).pdf` and `代码(后30页).pdf` (or `代码(全部).pdf` for projects under 60 pages)
+
+    The portal will also ask for identity and ownership proof documents. See [Other required documents](#other-required-documents) below for details — the skill does not generate those files.
+  </Step>
+
+  <Step title="Review and submit">
+    Before clicking submit, verify that every field on the review screen matches the values in your `申请表信息.txt`. Pay particular attention to the software name, version number, and dates, as inconsistencies between the form and the uploaded documents are a common reason for correction requests (补正). Once everything checks out, submit the application and note your application number. You can track status through the same portal.
+  </Step>
+</Steps>
+
+## What 申请表信息.txt is for
+
+`申请表信息.txt` is a copy-paste reference file, not an upload. Its purpose is to give you a single place to find every field value you need when filling in the online form, so you do not have to hunt through your source code or README to reconstruct dates and environment details. You do not attach or upload this file to the portal.
+
+## Other required documents
+
+The skill generates the operation manual and code material documents. It does not generate the following, which the portal may require depending on your situation:
+
+- **申请人身份证明** — identity proof for the copyright applicant (e.g., business license for a company, ID card for an individual)
+- **权属证明** — ownership evidence, if the software was developed under special circumstances (e.g., commissioned work)
+- **委托材料** — agency authorization documents, if you are filing through a registered agent rather than directly
+
+Check the current requirements on the portal for the exact documents needed and their accepted formats.
+
+<Warning>
+  This skill prepares the document package only. You, as the developer, are responsible for verifying that all generated materials accurately reflect your actual project and meet the current official requirements before submitting. The skill cannot check the filing portal on your behalf, and requirements can change over time.
+</Warning>

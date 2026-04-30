@@ -1,0 +1,74 @@
+---
+title: "Generate final 软著 Word and TXT output files"
+description: "Final markdown gate, build_docx_from_md.py command, output file table, three-round validation, and how to prepare the DOCX files for online 软著 filing."
+---
+
+After you confirm all Markdown drafts, a single command converts them into the final Word documents and TXT file that you submit — or derive PDFs from — for the official software copyright registration. The conversion script re-reads the confirmed `草稿/申请表信息.md` to get the authoritative software name and version, so the file names, code document headers, and manual title are always consistent with your registration form.
+
+## Final confirmation gate
+
+Before running the generation command, you must confirm that all Markdown drafts are complete and record the `markdown` gate:
+
+```bash
+python3 scripts/confirm_stage.py --workdir 软件著作权申请资料 --stage markdown --note "<用户确认内容>"
+```
+
+The `confirm_stage.py` script checks that all prerequisite gates have been recorded before accepting the markdown confirmation:
+
+- `business` — `草稿/业务理解.json` has `user_confirmed: true`
+- `code-selection` — `草稿/代码文件选择.json` has `user_confirmed: true`
+- `screenshot-method` — `截图方式确认.json` has `screenshot_method_confirmed: true`
+- `application-fields` — `草稿/申请表字段确认.json` has `application_fields_confirmed: true`
+- No remaining `待用户确认` markers in `草稿/申请表信息.md`
+
+If any prerequisite is unmet, the script prints each missing item and exits without recording the gate.
+
+## Generate Word/TXT
+
+Once the `markdown` gate is recorded, run:
+
+```bash
+python3 scripts/build_docx_from_md.py \
+  --workdir 软件著作权申请资料 \
+  --software-name "<软件全称>" \
+  --version "<版本号>"
+```
+
+The script first re-reads `草稿/申请表信息.md` to extract the confirmed `软件全称` and `版本号` fields from the `➤` field lines. If these values differ from the `--software-name` and `--version` CLI arguments, the confirmed form fields take precedence and a warning is written to `正式资料/生成报告.md`. This ensures the official output is always consistent with the form you confirmed.
+
+## Output files
+
+All final files are written to `软件著作权申请资料/正式资料/`:
+
+| File | When present |
+| --- | --- |
+| `申请表信息.txt` | Always |
+| `<软件全称>_操作手册.docx` | When `草稿/操作手册.md` exists |
+| `<软件全称>-代码(前30页).docx` | When extracted code is ≥ 60 pages |
+| `<软件全称>-代码(后30页).docx` | When extracted code is ≥ 60 pages |
+| `<软件全称>-代码(全部).docx` | When extracted code is < 60 pages |
+| `生成报告.md` | Always |
+
+All `.docx` files use black text throughout — no blue hyperlinks, no theme-color headings, no colored runs. Markdown links in the operation manual are converted to plain text. Code documents use a compact Consolas font at 7.2pt with exact line spacing to fit 60 lines per page. The page header of each code document shows `<软件全称> <版本号>    第 N 页`.
+
+## Three-round validation
+
+After generating all output files, the skill runs at least three validation rounds:
+
+**Round 1 — File completeness.** Confirms that every expected output file exists and is non-empty. Reports file sizes in `生成报告.md`.
+
+**Round 2 — Code traceability.** Samples code fragments from the generated `.docx` files and verifies they can be traced back to the source files listed in `草稿/代码提取清单.json`. Checks that file marker lines (`// File: <path>`) are present and that the surrounding lines match the original project source.
+
+**Round 3 — Business traceability and consistency.** Verifies that the industry, target users, main functions, and operation flow in `申请表信息.txt` and `操作手册.docx` can be traced back to `草稿/业务理解.md`. Also checks that the software name, version number, page counts, and form field values are consistent across all output files. Any mismatches are logged as warnings in `生成报告.md`.
+
+Validation issues that can be fixed automatically (such as a name mismatch between a CLI argument and the confirmed form field) are corrected during generation. Issues that require your input are listed in `生成报告.md` and must be resolved before the materials are submitted.
+
+## How to use the output files
+
+**`申请表信息.txt`** is a copy-paste reference for completing the online registration form at the China Copyright Protection Center (CCPC) portal. It is not uploaded directly — you enter each field value into the corresponding form field on the portal.
+
+**`<软件全称>_操作手册.docx`** and **the code `.docx` files** should be exported to PDF before uploading. Most registration portals require PDF format. Open each `.docx` in Word or LibreOffice, then use File → Export as PDF (or Print → Save as PDF) to produce the submission-ready files.
+
+<Note>
+For step-by-step instructions on completing the online copyright registration form and uploading your PDF documents, see [Filing process](/submission/filing-process).
+</Note>

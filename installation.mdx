@@ -1,0 +1,78 @@
+---
+title: "Download and install SoftwareCopyright-Skill in Codex"
+description: "How to clone or download the repository, copy software-copyright-materials/ into Codex's skills folder, and verify the SKILL.md path before first use."
+---
+
+Installing SoftwareCopyright-Skill means copying the `software-copyright-materials/` subdirectory into Codex's skills directory — not the repository root. The repository root is just a wrapper that contains the actual skill, a demo output, and screenshots. Codex loads skills by reading a `SKILL.md` file inside each subdirectory of `~/.codex/skills/`, so the path that matters is `~/.codex/skills/software-copyright-materials/SKILL.md`.
+
+## Download the repository
+
+<Tabs>
+  <Tab title="Git clone">
+    If you have Git installed, clone the repository and enter the directory:
+
+    ```bash
+    git clone https://github.com/Fokkyp/SoftwareCopyright-Skill.git
+    cd SoftwareCopyright-Skill
+    ```
+
+    After cloning you will see the `software-copyright-materials/` directory inside the repository root.
+  </Tab>
+  <Tab title="ZIP download">
+    If you prefer not to use Git:
+
+    1. Open [https://github.com/Fokkyp/SoftwareCopyright-Skill](https://github.com/Fokkyp/SoftwareCopyright-Skill) in your browser.
+    2. Click **Code**, then click **Download ZIP**.
+    3. Extract the ZIP archive.
+    4. Enter the extracted directory — you will see `software-copyright-materials/` inside it.
+  </Tab>
+</Tabs>
+
+## Copy the skill
+
+Once you are inside the downloaded or cloned directory, run the following two commands to create the Codex skills directory (if it does not already exist) and copy the skill into it:
+
+```bash
+mkdir -p ~/.codex/skills
+cp -R software-copyright-materials ~/.codex/skills/
+```
+
+After the copy completes, verify the skill is in the right place:
+
+```text
+~/.codex/skills/software-copyright-materials/SKILL.md
+```
+
+<Tip>
+  You can verify the path exists by running `ls ~/.codex/skills/software-copyright-materials/SKILL.md` in your terminal. If the file is listed, Codex will be able to discover and load the skill on the next session start.
+</Tip>
+
+<Warning>
+  Do not copy the repository root (`SoftwareCopyright-Skill/`) as the skill directory. Codex will not find a valid `SKILL.md` at the top level of the repository. You must copy the inner `software-copyright-materials/` subdirectory — that is the actual skill.
+</Warning>
+
+## Install for a single project
+
+If you only want one specific project to have access to this skill — rather than making it available globally — run the following one-liner from the directory where you want to download the repository. Replace `<你的项目目录>` with the absolute or relative path to your project:
+
+```bash
+PROJECT_DIR="<你的项目目录>" && git clone https://github.com/Fokkyp/SoftwareCopyright-Skill.git && mkdir -p "$PROJECT_DIR/.codex/skills" && cp -R SoftwareCopyright-Skill/software-copyright-materials "$PROJECT_DIR/.codex/skills/"
+```
+
+After running this command, the skill will be available at:
+
+```text
+<你的项目目录>/.codex/skills/software-copyright-materials/SKILL.md
+```
+
+Codex checks both the global `~/.codex/skills/` directory and the project-local `.codex/skills/` directory, so project-scoped installation works without affecting your global skills.
+
+## Restart Codex
+
+After copying the skill, close and reopen your Codex session (or refresh the skill list if your version of Codex supports hot-reloading). Codex reads the skills directory at session startup, so an existing session will not see the newly installed skill until you restart.
+
+Once restarted, open the project you want to register and ask Codex to begin:
+
+```text
+使用 software-copyright-materials 生成当前项目的软件著作权申请资料
+```

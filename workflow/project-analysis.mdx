@@ -1,0 +1,77 @@
+---
+title: "Project analysis: what the skill reads from your code"
+description: "How analyze_project.py scans your codebase, which frameworks and file categories it detects, and the JSON fields it writes to analysis/project.json."
+---
+
+Before generating any draft, the skill runs a structural analysis of your project to discover its framework, language, entry files, routes, component categories, and total source line count. This analysis is the factual foundation for every subsequent stage: business understanding draws from it, code selection uses its file categorization, and the application form draft reads its version and name candidates. The analysis itself makes no decisions about industry, purpose, or which code to include — those are judgment calls made later by Codex and confirmed by you.
+
+## Run the analysis
+
+```bash
+python3 scripts/analyze_project.py --project <项目目录> --out 软件著作权申请资料/analysis/project.json
+```
+
+The script will refuse to run if the `environment` gate has not been recorded when the full DOCX check required user input.
+
+## What gets detected
+
+`analyze_project.py` scans the project directory and collects the following evidence:
+
+**Framework detection** — reads `package.json` dependencies and file extensions to identify:
+React, Vue, Next.js, Nuxt, Svelte, Astro, Angular, Vite, UniApp, Electron, Tauri
+
+**Language** — inferred from file extensions (`.ts`, `.tsx`, `.js`, `.jsx`, `.vue`) and detected frameworks; reported as a human-readable string such as `Vue、TypeScript`.
+
+**Entry files** — files named `main.ts`, `main.js`, `main.tsx`, `main.jsx`, `app.vue`, `App.vue`, `app.tsx`, `index.tsx`, `index.jsx`, or matching Next.js app-router entry paths.
+
+**Route paths** — extracted from route configuration files and `href` attributes across entry, route, and page files.
+
+**File categories** — every source file is classified into one of: `entry`, `route`, `page`, `component`, `api`, `state`, `utility`, `style`, or `source`.
+
+**Source line count** — total lines across all frontend source files (`.ts`, `.tsx`, `.js`, `.jsx`, `.vue`, `.css`, `.scss`, `.sass`, `.less`).
+
+**`package.json` fields** — `name`, `version`, `scripts`, and all dependency names.
+
+**Run command candidates** — inferred from `scripts` keys in `package.json` (`dev`, `start`, `serve`, `preview`).
+
+**Feature candidates** — a deduplicated list of up to 30 feature name hints derived from route paths and page file names, used as early evidence for the business understanding stage.
+
+## Output fields
+
+The script writes a single JSON file to `软件著作权申请资料/analysis/project.json` with the following top-level fields:
+
+| Field | Description |
+| --- | --- |
+| `project_root` | Absolute path to the project directory |
+| `project_name` | Directory name of the project root |
+| `software_name_candidate` | Normalized title derived from `package.json` name or directory name |
+| `frameworks` | Sorted list of detected framework names |
+| `language` | Human-readable language string |
+| `source.file_count` | Number of frontend source files scanned |
+| `source.line_count` | Total source lines across all frontend files |
+| `source.extension_counts` | Map of file extension to count |
+| `source.category_counts` | Map of category name to file count |
+| `source.categorized_files` | Map of category name to list of relative file paths (up to 80 per category) |
+| `routes` | Sorted list of up to 80 unique route paths discovered |
+| `readme_excerpt` | First 60 non-empty lines of the project's README |
+| `run_command_candidates` | Inferred `npm run` commands |
+| `feature_candidates` | Up to 30 feature name hints from routes and page paths |
+| `package.name` | `name` field from `package.json` |
+| `package.version` | `version` field from `package.json` (defaults to `V1.0` if absent) |
+| `package.scripts` | All scripts from `package.json` |
+| `package.dependency_names` | Sorted list of all dependency names |
+
+## What gets excluded
+
+The scanner skips the following automatically:
+
+- `node_modules/`
+- Build artifacts: `dist/`, `build/`, `.next/`, `coverage/`
+- Hidden directories: `.git/` and any directory starting with `.`
+- The skill's own output directory: `软件著作权申请资料/`
+- Binary files and files larger than 800 KB
+- Files with lines longer than 3,000 characters in the first 80 lines
+
+<Note>
+`analyze_project.py` only collects structural evidence. It does not decide which industry your software belongs to, what its business purpose is, or which source files should appear in the copyright application materials. Those decisions are made by Codex reading the evidence alongside your project's README, PRD, and source code — and confirmed by you at the business understanding and code selection gates.
+</Note>
